@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevPilot — AI Developer Productivity Assistant</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1013;
+    --panel:#161A20;
+    --panel-2:#1D222A;
+    --line:#2A313C;
+    --text:#E7EAEE;
+    --muted:#8B95A3;
+    --mint:#4FE0B0;
+    --blue:#6C8EF5;
+    --amber:#F5B562;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sora',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  code, .mono, textarea, pre{
+    font-family:'JetBrains Mono', monospace;
+  }
+  a{color:var(--mint);}
+  ::selection{background:var(--mint);color:#08110D;}
+
+  /* ---------- Top bar ---------- */
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 32px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:rgba(14,16,19,.9);backdrop-filter:blur(6px);z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;letter-spacing:.2px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--mint);box-shadow:0 0 10px var(--mint);}
+  nav.tabs{display:flex;gap:4px;}
+  nav.tabs button{
+    background:none;border:none;color:var(--muted);font-family:inherit;font-size:.85rem;
+    padding:8px 14px;border-radius:5px;cursor:pointer;transition:background .15s, color .15s;
+  }
+  nav.tabs button:hover{color:var(--text);background:var(--panel-2);}
+  nav.tabs button.active{color:var(--bg);background:var(--mint);font-weight:600;}
+
+  main{max-width:1080px;margin:0 auto;padding:0 32px 80px;}
+
+  /* ---------- Hero / Landing ---------- */
+  .hero{padding:76px 0 48px;border-bottom:1px solid var(--line);margin-bottom:48px;}
+  .hero .eyebrow{color:var(--mint);font-family:'JetBrains Mono';font-size:.8rem;margin-bottom:14px;}
+  .hero h1{font-size:2.6rem;line-height:1.15;margin:0 0 18px;max-width:640px;font-weight:700;}
+  .hero p.lede{color:var(--muted);max-width:560px;font-size:1.05rem;margin:0 0 28px;}
+  .hero .cta-row{display:flex;gap:12px;flex-wrap:wrap;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:5px;
+    font-weight:600;font-size:.92rem;cursor:pointer;border:1px solid transparent;
+    font-family:inherit;text-decoration:none;
+  }
+  .btn-primary{background:var(--mint);color:#08110D;}
+  .btn-primary:hover{opacity:.88;}
+  .btn-ghost{background:none;border-color:var(--line);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--muted);}
+
+  .problem{color:var(--muted);max-width:640px;margin:30px 0 0;padding:18px 20px;background:var(--panel);border-left:3px solid var(--blue);border-radius:0 4px 4px 0;font-size:.94rem;}
+
+  /* Feature grid — deliberately a file-tree style, not rounded cards */
+  .tree{margin:56px 0;}
+  .tree h2{font-size:1.1rem;color:var(--muted);font-weight:600;margin-bottom:18px;font-family:'JetBrains Mono';}
+  .tree-list{border-top:1px solid var(--line);}
+  .tree-item{
+    display:flex;align-items:baseline;gap:16px;padding:16px 4px;border-bottom:1px solid var(--line);
+    cursor:pointer;transition:background .15s;
+  }
+  .tree-item:hover{background:var(--panel);}
+  .tree-item .tag{font-family:'JetBrains Mono';font-size:.78rem;color:var(--mint);width:96px;flex-shrink:0;}
+  .tree-item .body h3{margin:0 0 4px;font-size:1rem;}
+  .tree-item .body p{margin:0;color:var(--muted);font-size:.88rem;}
+
+  .steps{display:flex;gap:28px;margin:56px 0;flex-wrap:wrap;}
+  .step{flex:1;min-width:200px;}
+  .step .num{font-family:'JetBrains Mono';color:var(--blue);font-size:.85rem;margin-bottom:6px;}
+  .step h4{margin:0 0 6px;font-size:.98rem;}
+  .step p{margin:0;color:var(--muted);font-size:.86rem;}
+
+  /* ---------- Tool workspace ---------- */
+  .workspace{display:none;padding-top:40px;}
+  .workspace.active{display:block;}
+  .tool-head h2{margin:0 0 6px;font-size:1.4rem;}
+  .tool-head p{color:var(--muted);margin:0 0 28px;font-size:.92rem;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media (max-width:760px){.grid2{grid-template-columns:1fr;}}
+
+  .field-label{font-family:'JetBrains Mono';font-size:.78rem;color:var(--muted);margin-bottom:8px;display:block;}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+  textarea{
+    width:100%;min-height:220px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
+    color:var(--text);padding:12px;font-size:.85rem;resize:vertical;
+  }
+  textarea:focus{outline:1px solid var(--mint);}
+  .field-row + .field-row{margin-top:16px;}
+
+  .tool-actions{display:flex;gap:10px;margin-top:16px;}
+  .btn-sm{padding:8px 14px;font-size:.82rem;}
+
+  .output{min-height:220px;font-size:.88rem;}
+  .output .placeholder{color:var(--muted);font-family:'JetBrains Mono';font-size:.82rem;}
+  .output h4{color:var(--mint);font-size:.85rem;margin:14px 0 6px;font-family:'JetBrains Mono';}
+  .output h4:first-child{margin-top:0;}
+  .output ul{margin:0 0 8px;padding-left:18px;}
+  .output li{margin-bottom:4px;}
+  .output .commit-msg{background:var(--panel-2);border-left:3px solid var(--amber);padding:8px 12px;font-family:'JetBrains Mono';font-size:.85rem;margin:6px 0 14px;}
+
+  .spinner{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--mint);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .note{margin-top:22px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);padding-top:14px;}
+
+  footer{border-top:1px solid var(--line);padding:28px 32px;color:var(--muted);font-size:.82rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;max-width:1080px;margin:0 auto;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="dot"></span> DevPilot</div>
+  <nav class="tabs" id="navTabs">
+    <button data-target="landing" class="active">Overview</button>
+    <button data-target="code_review">Code Review</button>
+    <button data-target="documentation">Docs</button>
+    <button data-target="debug">Debug</button>
+    <button data-target="navigate">Navigate</button>
+    <button data-target="commit">Commit</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- LANDING -->
+  <section id="landing" class="workspace active">
+    <div class="hero">
+      <div class="eyebrow">/ all-in-one developer assistant</div>
+      <h1>Five tools your workflow needs. One place to run them.</h1>
+      <p class="lede">DevPilot reviews your code, writes your docs, explains your errors, maps your repo, and drafts your commit messages — without switching tabs.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="switchTab('code_review')">Try a demo →</button>
+        <a class="btn btn-ghost" href="#how">How it works</a>
+      </div>
+      <p class="problem">Developers lose time moving between separate tools for review, documentation, debugging, onboarding, and commit messages. DevPilot puts all five behind one input box.</p>
+    </div>
+
+    <div class="tree">
+      <h2>// features</h2>
+      <div class="tree-list">
+        <div class="tree-item" onclick="switchTab('code_review')">
+          <span class="tag">review</span>
+          <div class="body"><h3>Code Review</h3><p>Flags bugs, security issues, and bad practices, with plain-language explanations and fixes.</p></div>
+        </div>
+        <div class="tree-item" onclick="switchTab('documentation')">
+          <span class="tag">docs</span>
+          <div class="body"><h3>Documentation</h3><p>Generates a README-style overview, docstrings, and a usage example from raw code.</p></div>
+        </div>
+        <div class="tree-item" onclick="switchTab('debug')">
+          <span class="tag">debug</span>
+          <div class="body"><h3>Debug</h3><p>Takes an error message and code, and returns the root cause and a corrected snippet.</p></div>
+        </div>
+        <div class="tree-item" onclick="switchTab('navigate')">
+          <span class="tag">navigate</span>
+          <div class="body"><h3>Repo Navigator</h3><p>Points new contributors to the right file for a given question about the codebase.</p></div>
+        </div>
+        <div class="tree-item" onclick="switchTab('commit')">
+          <span class="tag">commit</span>
+          <div class="body"><h3>Commit Generator</h3><p>Turns a diff into a conventional commit message and a short PR description.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps" id="how">
+      <div class="step"><div class="num">01</div><h4>Pick a tool</h4><p>Choose review, docs, debug, navigate, or commit from the top bar.</p></div>
+      <div class="step"><div class="num">02</div><h4>Paste your input</h4><p>Or click "Try sample" to load a ready example.</p></div>
+      <div class="step"><div class="num">03</div><h4>Run it</h4><p>DevPilot returns a structured, judge-friendly result.</p></div>
+      <div class="step"><div class="num">04</div><h4>Reuse the output</h4><p>Copy the fix, the docs, or the commit message straight into your repo.</p></div>
+    </div>
+  </section>
+
+  <!-- CODE REVIEW -->
+  <section id="code_review" class="workspace">
+    <div class="tool-head">
+      <h2>Code Review</h2>
+      <p>Paste a function or file. DevPilot lists bugs, security issues, and bad practices.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <span class="field-label">code_input</span>
+        <textarea id="in_code_review" placeholder="Paste your code here..."></textarea>
+        <div class="tool-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample('code_review')">Try sample</button>
+          <button class="btn btn-primary btn-sm" onclick="run('code_review')">Analyze</button>
+        </div>
+      </div>
+      <div class="panel output" id="out_code_review"><span class="placeholder">Output will appear here.</span></div>
+    </div>
+  </section>
+
+  <!-- DOCUMENTATION -->
+  <section id="documentation" class="workspace">
+    <div class="tool-head">
+      <h2>Documentation</h2>
+      <p>Paste a function or module. DevPilot writes an overview, docstrings, and a usage example.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <span class="field-label">code_input</span>
+        <textarea id="in_documentation" placeholder="Paste your code here..."></textarea>
+        <div class="tool-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample('documentation')">Try sample</button>
+          <button class="btn btn-primary btn-sm" onclick="run('documentation')">Generate</button>
+        </div>
+      </div>
+      <div class="panel output" id="out_documentation"><span class="placeholder">Output will appear here.</span></div>
+    </div>
+  </section>
+
+  <!-- DEBUG -->
+  <section id="debug" class="workspace">
+    <div class="tool-head">
+      <h2>Debug</h2>
+      <p>Paste an error message and the surrounding code for a likely cause and a fix.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="field-row">
+          <span class="field-label">error_message</span>
+          <textarea id="in_debug_error" style="min-height:80px" placeholder="e.g. TypeError: Cannot read property 'map' of undefined"></textarea>
+        </div>
+        <div class="field-row">
+          <span class="field-label">code_input</span>
+          <textarea id="in_debug_code" style="min-height:120px" placeholder="Paste the related code..."></textarea>
+        </div>
+        <div class="tool-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample('debug')">Try sample</button>
+          <button class="btn btn-primary btn-sm" onclick="run('debug')">Diagnose</button>
+        </div>
+      </div>
+      <div class="panel output" id="out_debug"><span class="placeholder">Output will appear here.</span></div>
+    </div>
+  </section>
+
+  <!-- NAVIGATE -->
+  <section id="navigate" class="workspace">
+    <div class="tool-head">
+      <h2>Repo Navigator</h2>
+      <p>Paste a folder structure and ask where something lives.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="field-row">
+          <span class="field-label">repo_structure</span>
+          <textarea id="in_nav_repo" style="min-height:120px" placeholder="/src&#10;  /components&#10;  /routes&#10;  /controllers"></textarea>
+        </div>
+        <div class="field-row">
+          <span class="field-label">user_question</span>
+          <textarea id="in_nav_q" style="min-height:60px" placeholder="Where is user authentication logic?"></textarea>
+        </div>
+        <div class="tool-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample('navigate')">Try sample</button>
+          <button class="btn btn-primary btn-sm" onclick="run('navigate')">Find it</button>
+        </div>
+      </div>
+      <div class="panel output" id="out_navigate"><span class="placeholder">Output will appear here.</span></div>
+    </div>
+  </section>
+
+  <!-- COMMIT -->
+  <section id="commit" class="workspace">
+    <div class="tool-head">
+      <h2>Commit Generator</h2>
+      <p>Paste a diff. DevPilot drafts a conventional commit message and a short PR description.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <span class="field-label">code_diff</span>
+        <textarea id="in_commit" placeholder="Paste your git diff here..."></textarea>
+        <div class="tool-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample('commit')">Try sample</button>
+          <button class="btn btn-primary btn-sm" onclick="run('commit')">Generate</button>
+        </div>
+      </div>
+      <div class="panel output" id="out_commit"><span class="placeholder">Output will appear here.</span></div>
+    </div>
+  </section>
+
+  <p class="note" style="max-width:1080px">This is a static demo build: results shown here are pre-written examples, not live model output. To make it functional, wire the <code>run()</code> function in this file to your backend endpoint (Node/Flask) that calls the Claude or OpenAI API with the DevPilot system prompt.</p>
+
+</main>
+
+<footer>
+  <span>DevPilot — AI Developer Productivity Assistant</span>
+  <span>Built for hackathon demo · static frontend, backend-ready</span>
+</footer>
+
+<script>
+  // ---------- Tab switching ----------
+  function switchTab(id){
+    document.querySelectorAll('.workspace').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`nav.tabs button[data-target="${id}"]`).classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.querySelectorAll('nav.tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=> switchTab(btn.dataset.target));
+  });
+
+  // ---------- Sample data ----------
+  const samples = {
+    code_review: `function login(user, pass) {
+  if (user == "admin" && pass == "1234") {
+    return true;
+  }
+  var query = "SELECT * FROM users WHERE username='" + user + "'";
+  return query;
+}`,
+    documentation: `function add(a, b) {
+  return a + b;
+}`,
+    debug: {
+      error: `TypeError: Cannot read property 'map' of undefined`,
+      code: `const items = data.results;
+items.map(item => item.name);`
+    },
+    navigate: {
+      repo: `/src
+  /components
+  /routes
+  /controllers
+  /middleware
+  /models`,
+      q: `Where is user authentication logic?`
+    },
+    commit: `+ function validateEmail(email) {
++   return /\\S+@\\S+\\.\\S+/.test(email);
++ }`
+  };
+
+  function loadSample(tool){
+    if(tool === 'debug'){
+      document.getElementById('in_debug_error').value = samples.debug.error;
+      document.getElementById('in_debug_code').value = samples.debug.code;
+    } else if(tool === 'navigate'){
+      document.getElementById('in_nav_repo').value = samples.navigate.repo;
+      document.getElementById('in_nav_q').value = samples.navigate.q;
+    } else {
+      document.getElementById('in_' + tool).value = samples[tool];
+    }
+  }
+
+  // ---------- Mock "analyze" (swap for a real API call) ----------
+  const responses = {
+    code_review: `
+      <h4>Bugs</h4><ul><li>None functionally breaking, but the query is never executed — it's returned as a string.</li></ul>
+      <h4>Security</h4><ul><li>SQL injection: the username is concatenated directly into the query.</li><li>Hardcoded credentials ("admin" / "1234") in source code.</li></ul>
+      <h4>Bad practices</h4><ul><li>Loose equality (==) instead of strict (===).</li><li>var instead of let/const.</li></ul>
+      <h4>Suggested fix</h4><ul><li>Use parameterized queries.</li><li>Move credentials to environment variables.</li><li>Use === and const.</li></ul>`,
+    documentation: `
+      <h4>Overview</h4><ul><li>Adds two numbers and returns the sum.</li></ul>
+      <h4>Docstring</h4><ul><li>/** Adds two numbers. @param {number} a @param {number} b @returns {number} */</li></ul>
+      <h4>Usage example</h4><ul><li>add(2, 3) // returns 5</li></ul>`,
+    debug: `
+      <h4>Root cause</h4><ul><li>"data.results" is undefined at the time .map() runs — likely the data hasn't loaded yet (e.g. before an async fetch resolves).</li></ul>
+      <h4>Fix</h4><ul><li>Guard the call: (data.results || []).map(...)</li><li>Or wait for the data to load before rendering.</li></ul>
+      <h4>Avoid in future</h4><ul><li>Set a sensible default state (e.g. []) instead of undefined.</li></ul>`,
+    navigate: `
+      <h4>Relevant location</h4><ul><li>/src/controllers — handles the actual auth logic (login, token checks).</li><li>/src/middleware — likely holds route-level auth guards.</li></ul>
+      <h4>Why</h4><ul><li>Controllers typically own business logic; middleware intercepts requests before they reach it.</li></ul>`,
+    commit: `
+      <div class="commit-msg">feat: add email format validation</div>
+      <h4>PR description</h4><ul><li>Adds a validateEmail() helper that checks basic email format using a regex. Used ahead of form submission to catch malformed addresses early.</li></ul>`
+  };
+
+  function run(tool){
+    const out = document.getElementById('out_' + tool);
+    out.innerHTML = `<span class="spinner"></span><span class="placeholder">Analyzing...</span>`;
+    setTimeout(()=>{
+      out.innerHTML = responses[tool];
+    }, 700);
+  }
+</script>
+
+</body>
+</html>
